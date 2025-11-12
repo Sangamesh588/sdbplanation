@@ -16,9 +16,10 @@ async function sendData(event) {
   };
 
   if (!data.name || !data.phone || !data.address) {
-    formMessage.textContent = "⚠️ Please fill Name, Phone and Address.";
+    formMessage.textContent = "⚠️ Please fill Name, Phone, and Address.";
     return;
   }
+
   if (!data.consent) {
     formMessage.textContent = "⚠️ Please agree to be contacted.";
     return;
@@ -27,7 +28,8 @@ async function sendData(event) {
   formMessage.textContent = "⏳ Sending...";
 
   try {
-    const res = await fetch("/submit-inquiry", {
+    // ✅ Correct endpoint name here
+    const res = await fetch("/submit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
