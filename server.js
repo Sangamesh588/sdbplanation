@@ -1,66 +1,83 @@
-import express from "express";
-import mongoose from "mongoose";
-import dotenv from "dotenv";
-import cors from "cors";
-import path from "path";
-import { fileURLToPath } from "url";
+// server.js
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const cors = require('cors');
+const { v4: uuidv4 } = require('uuid');
 
-dotenv.config();
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Fix __dirname for ES Modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Serve static files (index.html, script.js, images, etc.)
-app.use(express.static(__dirname));
+const DATA_DIR = path.join(__dirname, 'data');
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
+const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
+const DRAFTS_FILE = path.join(DATA_DIR, 'drafts.json');
 
-// ✅ MongoDB Connection
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ Connected to MongoDB Atlas"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
+function readJSON(file){
+  try{
+    if(!fs.existsSync(file)) return [];
+    const raw = fs.readFileSync(file,'utf8');
+    return JSON.parse(raw || '[]');
+  }catch(e){ console.error('readJSON error', e); return []; }
+}
 
-// ✅ Schema & Model
-const inquirySchema = new mongoose.Schema({
-  name: String,
-  business_name: String,
-  phone: String,
-  city: String,
-  address: String,
-  variety: String,
-  quantity_kg: String,
-  message: String,
-  consent: Boolean,
-  date: { type: Date, default: Date.now },
-});
+function writeJSON(file, arr){
+  fs.writeFileSync(file, JSON.stringify(arr, null, 2), 'utf8');
+}
 
-const Inquiry = mongoose.model("Inquiry", inquirySchema);
-
-// ✅ Route to handle form submissions
-app.post("/submit", async (req, res) => {
-  console.log("📩 Incoming form data:", req.body);
-  try {
-    const newInquiry = new Inquiry(req.body);
-    await newInquiry.save();
-    console.log("✅ Inquiry saved successfully");
-    res.json({ success: true, message: "Inquiry saved successfully" });
-  } catch (error) {
-    console.error("❌ Error saving inquiry:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+// POST draft (non-blocking)
+app.post('/api/orders/draft', (req, res) => {
+  try{
+    const draft = req.body || {};
+    draft.id = draft.id || uuidv4();
+    draft._savedAt = new Date().toISOString();
+    const drafts = readJSON(DRAFTS_FILE);
+    drafts.push(draft);
+    writeJSON(DRAFTS_FILE, drafts);
+    return res.status(201).json({ ok:true, draftId: draft.id });
+  }catch(err){
+    console.error(err);
+    return res.status(500).json({ ok:false, error:'draft save failed' });
   }
 });
 
-// ✅ Fallback route for SPA / HTML
-app.get(/.*/, (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+// POST final order
+app.post('/api/orders', (req, res) => {
+  try{
+    const payload = req.body || {};
+    // validation: ensure items exist
+    if(!Array.isArray(payload.items) || payload.items.length === 0){
+      return res.status(400).json({ ok:false, error: 'no items' });
+    }
+    const order = {
+      orderId: 'SDB-' + uuidv4().split('-')[0].toUpperCase(),
+      customer: payload.customer || {},
+      items: payload.items,
+      subtotal: payload.subtotal || payload.items.reduce((s,i)=>s + (i.price * i.qty), 0),
+      createdAt: new Date().toISOString(),
+      status: 'received'
+    };
+    const orders = readJSON(ORDERS_FILE);
+    orders.push(order);
+    writeJSON(ORDERS_FILE, orders);
+    return res.status(201).json({ ok:true, orderId: order.orderId });
+  }catch(err){
+    console.error(err);
+    return res.status(500).json({ ok:false, error:'order save failed' });
+  }
 });
 
-// ✅ Start server
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+// simple list orders (for admin)
+app.get('/api/orders', (req, res) => {
+  const orders = readJSON(ORDERS_FILE);
+  res.json(orders);
+});
+
+app.get('/api/drafts', (req, res) => {
+  const drafts = readJSON(DRAFTS_FILE);
+  res.json(drafts);
+});
+
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, ()=> console.log(`SDB backend listening on http://localhost:${PORT}`));
