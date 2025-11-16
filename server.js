@@ -41,66 +41,79 @@ mongoose.connection.on('connected', () => {
   console.log('🔎 Mongoose hosts:', mongoose.connection.hosts || mongoose.connection.client?.topology?.s?.options?.hosts);
 });
 
-// Order schema
+// Simple order item schema (no _id per item)
 const orderItemSchema = new mongoose.Schema({
-  sku: String,
-  name: String,
-  qtyKg: Number,
-  price: Number,
-  img: String,
-});
+  sku:   { type: String, required: true },
+  name:  { type: String, required: true },
+  qtyKg: { type: Number, required: true },
+  price: { type: Number, required: true },
+  img:   { type: String, default: "" }
+}, { _id: false });
+
+// Clean order schema (no __v, keeps only needed fields)
 const orderSchema = new mongoose.Schema({
   customer: {
-    name: String,
-    phone: String,
-    address: String,
+    name:    { type: String, required: true },
+    phone:   { type: String, required: true },
+    address: { type: String, required: true }
   },
-  items: [orderItemSchema],
-  totalKg: Number,
-  totalAmount: Number,
-  date: { type: Date, default: Date.now },
+  items:      { type: [orderItemSchema], required: true },
+  totalKg:    { type: Number, required: true },
+  totalAmount:{ type: Number, required: true },
+  date:       { type: Date, default: Date.now }
+}, {
+  versionKey: false // removes __v
 });
-let Order;
-try { Order = mongoose.model("Order", orderSchema); } catch(e) { Order = mongoose.models.Order || mongoose.model("Order", orderSchema); }
 
-// Route: accept orders
-app.post("/order", async (req, res) => {
+let Order;
+try { Order = mongoose.model('Order', orderSchema); }
+catch(e) { Order = mongoose.models.Order || mongoose.model('Order', orderSchema); }
+
+// POST /order - validate + normalize + save - respond with friendly message (no DB id returned)
+app.post('/order', async (req, res) => {
   try {
-    const payload = req.body;
-    // basic validation
-    if (!payload || !payload.customer || !Array.isArray(payload.items) || payload.items.length === 0) {
-      return res.status(400).json({ success: false, message: "Invalid order payload" });
+    const body = req.body || {};
+    // Basic validation
+    if (!body.customer || !Array.isArray(body.items) || body.items.length === 0) {
+      return res.status(400).json({ success: false, message: 'Invalid order payload' });
     }
 
-    // normalize items
-    const items = payload.items.map(it => ({
-      sku: it.sku,
-      name: it.name,
-      qtyKg: Number(it.qtyKg) || 0,
-      price: Number(it.price) || 0,
-      img: it.img || ""
+    // Normalize items: ensure numeric types
+    const items = body.items.map(it => ({
+      sku: String(it.sku || '').trim(),
+      name: String(it.name || '').trim(),
+      qtyKg: Number(it.qtyKg || 0),
+      price: Number(it.price || 0),
+      img: String(it.img || '')
     }));
-    const totalKg = items.reduce((s,i) => s + i.qtyKg, 0);
-    const totalAmount = items.reduce((s,i) => s + (i.qtyKg * i.price), 0);
 
+    // compute totals (trust server-side calculation)
+    const totalKg = items.reduce((s,i) => s + (Number(i.qtyKg) || 0), 0);
+    const totalAmount = items.reduce((s,i) => s + ((Number(i.qtyKg) || 0) * (Number(i.price) || 0)), 0);
+
+    const orderDoc = {
+      customer: {
+        name: String(body.customer.name || '').trim(),
+        phone: String(body.customer.phone || '').trim(),
+        address: String(body.customer.address || '').trim()
+      },
+      items,
+      totalKg,
+      totalAmount
+    };
+
+    // Save if DB connected; otherwise acknowledge but don't error
     if (mongoose.connection.readyState) {
-      const newOrder = new Order({
-        customer: payload.customer,
-        items,
-        totalKg,
-        totalAmount,
-      });
-      const saved = await newOrder.save();
-      console.log("✅ Order saved:", saved._id);
-      return res.json({ success: true, orderId: saved._id });
+      await new Order(orderDoc).save();
+      // friendly response — do NOT return DB id
+      return res.json({ success: true, message: 'Thank you — our team will contact you shortly.' });
     } else {
-      console.warn("⚠️ Order received but DB not connected. Not saved.");
-      // send back a pseudo-id so frontend behaves as success
-      return res.json({ success: true, orderId: `NOSQL-${Date.now()}`, note: "DB not connected; order not persisted." });
+      console.warn('DB not connected - order not persisted');
+      return res.json({ success: true, message: 'Order received (not saved — DB not connected).' });
     }
   } catch (err) {
-    console.error("❌ Error saving order:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error('Order save error:', err);
+    res.status(500).json({ success: false, message: 'Server error saving order' });
   }
 });
 
