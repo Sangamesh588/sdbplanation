@@ -306,6 +306,137 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;pa
   .input{padding:8px;border-radius:8px;border:1px solid #e6e9ed;width:100%}
   label{display:block;font-size:13px;color:#6b7280;margin-bottom:6px}
   .note{font-size:13px;color:#6b7280;margin-top:8px}
+  /* ======= Cart layout fixes ======= */
+/* Ensure the card uses 3 columns on tablet/desktop so price has its own column */
+.card {
+  display: grid;
+  grid-template-columns: 86px 1fr 110px; /* image | details | price/actions */
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  box-sizing: border-box;
+  min-height: 110px;
+}
+
+/* Product image */
+.card img {
+  width: 86px;
+  height: 86px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+/* DETAILS column should not overflow controls */
+.card .body, .card .meta {
+  min-width: 0; /* allow truncation */
+}
+
+/* Title row: keep title and remove button horizontally separated */
+.card .title-row {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  min-width:0;
+}
+.card .title-row h3, .card .title-row .title {
+  margin:0;
+  font-size:16px;
+  line-height:1.15;
+  white-space:nowrap;        /* prevent long single-line overflow */
+  overflow: hidden;
+  text-overflow: ellipsis;  /* show ... if too long */
+}
+
+/* Remove button stays on the right of the title (not overlapping) */
+.card .remove {
+  flex: 0 0 auto;
+  margin-left:8px;
+  padding:8px 10px;
+  border-radius:10px;
+  border:1px solid #e6e9ed;
+  background: #fff;
+  color: var(--muted);
+  cursor:pointer;
+  font-size:13px;
+}
+
+/* Price / actions column */
+.card .controls {
+  text-align:right;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  align-items:flex-end;
+  min-width:0;
+}
+.card .lineTotal {
+  font-weight:900;
+  font-size:18px;
+}
+
+/* Qty input styling */
+.card .qty {
+  width:100px;
+  max-width:100px;
+  box-sizing:border-box;
+}
+
+/* ===== Mobile: stack layout so nothing collides ===== */
+@media (max-width:720px) {
+  .card {
+    grid-template-columns: 96px 1fr; /* image | details */
+    align-items: start;
+    grid-auto-rows: auto;
+  }
+
+  /* Make image larger on mobile */
+  .card img { width:100%; height:140px; grid-column:1 / -1; border-radius:10px; }
+
+  /* Body (title + desc + qty) occupies full width */
+  .card .body { grid-column:1 / -1; padding-top:8px; }
+
+  /* Move controls (remove + lineTotal) under the details, full width */
+  .card .controls {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid #f1f5f1;
+  }
+
+  .card .remove {
+    order: 0;
+    padding:8px 12px;
+    background:#fff;
+    border-radius:10px;
+  }
+
+  .card .lineTotal {
+    order: 1;
+    font-size:18px;
+    color: #0f1724;
+  }
+
+  /* allow title to wrap on small screens */
+  .card .title-row h3, .card .title-row .title {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  /* Make qty input full width in details area */
+  .card .qty { width:120px; max-width:45%; }
+}
+
+/* Safety: if something else overrides, give these higher specificity */
+.cart-page .card, .cart-list .card { /* apply when you use container classes */ }
+
+/* Small visual tweak: ensure remove button box doesn't float over title */
+.card .remove { box-shadow: none; }
+
 </style>
 </head>
 <body>
