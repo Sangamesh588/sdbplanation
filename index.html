@@ -7,6 +7,113 @@
   <meta name="description" content="SDB Plantation — Farm fresh wholesale bananas. Contact for bulk orders, pricing and delivery." />
   <link rel="icon" href="/assets/favicon.ico" />
   <style>
+    /* ===============================
+   ⭐ MOBILE HEADER & CART FIX
+   =============================== */
+
+header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:10px 0;
+}
+
+.nav {
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+
+#openCart {
+  padding:8px 12px !important;
+  font-size:15px !important;
+  border-radius:8px !important;
+}
+
+@media (max-width:480px) {
+  /* Smaller mobile header */
+  header {
+    flex-direction:row;
+    justify-content:space-between;
+    align-items:center;
+  }
+
+  .brand h1 {
+    font-size:17px;
+  }
+
+  #openCart {
+    font-size:14px !important;
+    padding:6px 10px !important;
+  }
+}
+
+/* ===============================
+   ⭐ PRODUCT CARD CLICK EFFECT
+   =============================== */
+
+.card {
+  transition:transform 0.15s ease, box-shadow 0.2s ease !important;
+  cursor:pointer;
+}
+
+.card:active {
+  transform:scale(0.96);
+  box-shadow:0 4px 14px rgba(0,0,0,0.18);
+}
+
+.add-btn {
+  transition:background 0.2s ease, transform 0.15s ease;
+}
+
+.add-btn:active {
+  transform:scale(0.92);
+}
+
+/* ===============================
+   ⭐ IMPROVE PRODUCT HEADER (Products / Cart)
+   =============================== */
+
+.nav a {
+  font-size:14px;
+  padding:6px 10px;
+  color:#2f9e44;
+  font-weight:600;
+}
+
+.nav a:hover {
+  background:#e9f7ec;
+  border-radius:6px;
+}
+
+/* Fix overflow on mobile */
+@media (max-width:480px) {
+  .nav {
+    gap:6px;
+  }
+
+  .nav a {
+    font-size:13px;
+    padding:5px 8px;
+  }
+}
+
+/* ===============================
+   ⭐ FIX “Cart (0)” UI ON VERY SMALL SCREENS
+   =============================== */
+
+@media (max-width:380px) {
+  #openCart {
+    font-size:13px !important;
+    padding:5px 8px !important;
+  }
+}
+.card:active {
+  transform:scale(0.95);
+  background:#f4fff4;
+}
+
+
     /* === MOBILE-FIRST UI IMPROVEMENTS (paste at top of existing <style>) === */
 :root{
   --brand:#2f9e44;
@@ -127,11 +234,12 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;pa
         </div>
       </a>
 
-      <div class="nav">
-        <a class="small" href="#products">Products</a>
-        <a  class="small" href="/cart.html">Cart</a>
-        <button id="openCart" class="btn">Cart (<span id="cartCount">0</span>)</button>
-      </div>
+    <div class="nav">
+  <a href="#products">Products</a>
+  <a href="/cart.html">Cart</a>
+  <button id="openCart" class="btn">Cart (<span id="cartCount">0</span>)</button>
+</div>
+
     </header>
 
     <!-- Hero -->
