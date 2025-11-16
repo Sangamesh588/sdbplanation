@@ -192,6 +192,39 @@ header {
   --small:13px;
   font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
 }
+/* Cart card: stable 3-col on desktop, 2-col on mobile with controls below */
+.card {
+  display: grid;
+  grid-template-columns: 86px 1fr 110px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.card img {
+  width: 86px;
+  height: 86px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.card .meta { min-width: 0; } /* allow text truncation safely */
+
+.card strong { display:block; max-width:100%; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* mobile: stack controls under details and allow title to wrap */
+@media (max-width:720px) {
+  .card {
+    grid-template-columns: 86px 1fr;
+    align-items: start;
+  }
+  .card img { width:86px; height:86px; }
+  .card .controls { grid-column: 1 / -1; display:flex; justify-content:space-between; align-items:center; margin-top:10px; }
+  .card strong { white-space:normal; } /* allow wrapping on mobile */
+  .lineTotal { font-size:18px; }
+}
+
 /* CART PRICE FIX — add to cart.css or inside <style> of cart.html */
 
 /* Ensure price column is fixed width and right-aligned on wide screens */
@@ -436,6 +469,95 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;pa
 
 /* Small visual tweak: ensure remove button box doesn't float over title */
 .card .remove { box-shadow: none; }
+
+/* === Horizontal compact cart row (image | info/title | qty+price) === */
+.cart-list .card, #cartList .card {
+  display: grid;
+  grid-template-columns: 86px 1fr 120px; /* image | title/details | qty+price */
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  box-sizing: border-box;
+  border-radius: 10px;
+}
+
+/* smaller image */
+.card img {
+  width:86px;
+  height:86px;
+  object-fit:cover;
+  border-radius:8px;
+}
+
+/* product title & small meta */
+.card .meta { min-width:0; }
+.card .meta strong {
+  display:block;
+  font-size:15px;
+  line-height:1.15;
+  margin-bottom:6px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.card .meta .small { font-size:13px; color:var(--muted); }
+
+/* right column: qty stepper + price aligned vertically */
+.card .controls {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:8px;
+  min-width:0;
+}
+
+/* stepper row: - [input] + */
+.stepper {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  background:transparent;
+  border-radius:999px;
+  padding:4px;
+}
+.stepper button {
+  border:1px solid #e6e9ed;
+  background:#fff;
+  padding:6px 8px;
+  border-radius:8px;
+  min-width:36px;
+  height:36px;
+  cursor:pointer;
+  font-weight:700;
+}
+.stepper input.qty {
+  width:56px;
+  text-align:center;
+  border-radius:8px;
+  border:1px solid #e6e9ed;
+  padding:6px 8px;
+  font-size:15px;
+}
+
+/* line total (big price) */
+.card .lineTotal { font-weight:900; font-size:18px; color:#0f1724; }
+
+/* make sure price never breaks */
+.card .lineTotal, .card .price { white-space:nowrap; }
+
+/* Small screens: compact layout stacks controls under but still horizontal inside control */
+@media (max-width:520px) {
+  .cart-list .card, #cartList .card {
+    grid-template-columns:72px 1fr 120px;
+    gap:10px;
+  }
+  .card img { width:72px; height:72px; }
+  .stepper input.qty { width:48px; }
+}
+
+/* If you want the whole card clickable but not stepper: avoid pointer events on .stepper children handled separately */
+.card .stepper * { touch-action: manipulation; } 
+
 
 </style>
 </head>
