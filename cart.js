@@ -1,330 +1,181 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Cart — SDB Plantation</title>
-<style>
-    /* ===== Cart card layout (desktop & mobile) ===== */
-.cart-card, /* for safety if you used another class */ .card {
-  display:grid;
-  grid-template-columns: 86px 1fr 90px; /* img | details | price/actions */
-  gap:12px;
-  align-items:center;
-  padding:10px;
-  box-sizing:border-box;
-}
+// cart.js — POST to /order, wait for response, show friendly thank-you (no ID)
+(() => {
+  const CART_KEY = 'sdb_cart_v3';
+  const LOG = '[cart]';
+  function log(...a){ try{ console.log(LOG, ...a) }catch(e){} }
+  function err(...a){ try{ console.error(LOG, ...e) }catch(e){} }
 
-/* image */
-.card img { width:86px; height:86px; object-fit:cover; border-radius:8px; }
+  function safeParse(v){ try{ return JSON.parse(v||'{}'); } catch(e){ console.error(LOG,'parse error', e); return {}; } }
+  function loadCart(){ return safeParse(localStorage.getItem(CART_KEY)); }
+  function saveCart(cart){ try{ localStorage.setItem(CART_KEY, JSON.stringify(cart)); render(); } catch(e){ console.error(LOG,'save error', e); } }
 
-/* center details and prevent overflow */
-.card .body, .card .meta {
-  min-width:0; /* allow truncation inside flex/grid */
-}
+  function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, m=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m])); }
 
-/* product title: don't wrap into controls */
-.card h3, .card .title, .card strong {
-  margin:0;
-  font-size:15px;
-  line-height:1.2;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-/* controls on the right column */
-.card .controls, .card > div[style*="min-width:120px"] {
-  text-align:right;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-  align-items:flex-end;
-}
-
-/* make remove button clear and space below */
-.card .remove {
-  display:inline-block;
-  padding:6px 8px;
-  border-radius:8px;
-  border:1px solid #e6e9ed;
-  background:transparent;
-  color:var(--muted);
-  font-size:13px;
-  cursor:pointer;
-  white-space:nowrap;
-}
-
-/* small screen: stack layout so remove & price are below details and not squeezed */
-@media (max-width:720px) {
-  .card {
-    grid-template-columns: 96px 1fr; /* image | details */
-    align-items:start;
-  }
-  .card .controls {
-    grid-column: 1 / -1; /* controls stretch full width under details */
-    display:flex; justify-content:space-between; align-items:center;
-    margin-top:8px;
-  }
-  .card img { width:100%; height:140px; border-radius:10px; }
-  .card h3 { white-space:normal; } /* allow title to wrap nicely under image */
-}
-
-    /* ===============================
-   ⭐ MOBILE HEADER & CART FIX
-   =============================== */
-
-header {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:10px 0;
-}
-
-.nav {
-  display:flex;
-  gap:10px;
-  align-items:center;
-}
-
-#openCart {
-  padding:8px 12px !important;
-  font-size:15px !important;
-  border-radius:8px !important;
-}
-
-@media (max-width:480px) {
-  /* Smaller mobile header */
-  header {
-    flex-direction:row;
-    justify-content:space-between;
-    align-items:center;
-  }
-
-  .brand h1 {
-    font-size:17px;
-  }
-
-  #openCart {
-    font-size:14px !important;
-    padding:6px 10px !important;
-  }
-}
-
-/* ===============================
-   ⭐ PRODUCT CARD CLICK EFFECT
-   =============================== */
-
-.card {
-  transition:transform 0.15s ease, box-shadow 0.2s ease !important;
-  cursor:pointer;
-}
-
-.card:active {
-  transform:scale(0.96);
-  box-shadow:0 4px 14px rgba(0,0,0,0.18);
-}
-
-.add-btn {
-  transition:background 0.2s ease, transform 0.15s ease;
-}
-
-.add-btn:active {
-  transform:scale(0.92);
-}
-
-/* ===============================
-   ⭐ IMPROVE PRODUCT HEADER (Products / Cart)
-   =============================== */
-
-.nav a {
-  font-size:14px;
-  padding:6px 10px;
-  color:#2f9e44;
-  font-weight:600;
-}
-
-.nav a:hover {
-  background:#e9f7ec;
-  border-radius:6px;
-}
-
-/* Fix overflow on mobile */
-@media (max-width:480px) {
-  .nav {
-    gap:6px;
-  }
-
-  .nav a {
-    font-size:13px;
-    padding:5px 8px;
-  }
-}
-
-/* ===============================
-   ⭐ FIX “Cart (0)” UI ON VERY SMALL SCREENS
-   =============================== */
-
-@media (max-width:380px) {
-  #openCart {
-    font-size:13px !important;
-    padding:5px 8px !important;
-  }
-}
-.card:active {
-  transform:scale(0.95);
-  background:#f4fff4;
-}
-
-    /* === MOBILE-FIRST UI IMPROVEMENTS (paste at top of existing <style>) === */
-:root{
-  --brand:#2f9e44;
-  --fg:#0f1724;
-  --muted:#6b7280;
-  --card:#ffffff;
-  --card-shadow: 0 10px 30px rgba(15,23,36,0.06);
-  --radius:12px;
-  --tap:12px;        /* button vertical padding */
-  --gap:12px;
-  --max-width:1100px;
-  --text-base:16px;
-  --small:13px;
-  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-}
-
-/* reset / mobile-friendly defaults */
-html,body{height:100%;margin:0;padding:0;background:#fff;color:var(--fg);-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
-.wrap{max-width:var(--max-width);margin:0 auto;padding:14px}
-
-/* buttons & tappables */
-.btn, button, .cart-fab, a.btn {
-  display:inline-flex; align-items:center; justify-content:center;
-  gap:8px; padding:calc(var(--tap) + 2px) 14px; border-radius:var(--radius);
-  font-size:var(--text-base); line-height:1; min-height:44px; cursor:pointer;
-  -webkit-tap-highlight-color: rgba(0,0,0,0.08);
-}
-.btn { background:var(--brand); color:#fff; border:none; box-shadow:0 6px 18px rgba(47,158,68,0.12) }
-.btn.secondary{ background:transparent; color:var(--brand); border:1px solid rgba(47,158,68,0.12) }
-
-/* cards */
-.card{background:var(--card); border-radius:var(--radius); box-shadow:var(--card-shadow); overflow:hidden; border:1px solid rgba(0,0,0,0.04)}
-.card img{width:100%;height:auto;display:block;object-fit:cover}
-
-/* grids (mobile-first) */
-.cards{display:grid;grid-template-columns:1fr;gap:var(--gap);margin-top:14px}
-.kpis{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-.kpi{flex:1;min-width:120px;padding:10px;border-radius:10px;background:#f6f9f5;text-align:center}
-
-/* typography */
-h1,h2,h3{margin:6px 0 8px;font-weight:700}
-p, .small{font-size:var(--small);color:var(--muted);margin:0}
-
-/* header */
-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0}
-.brand img{width:52px;height:52px;border-radius:10px;object-fit:cover}
-.brand h1{font-size:18px;margin:0}
-
-/* layout adjustments on small screens */
-@media (min-width:640px){
-  .cards{grid-template-columns:repeat(2,1fr)}
-  .hero{grid-template-columns:1fr 360px;gap:20px}
-}
-@media (min-width:1000px){
-  .cards{grid-template-columns:repeat(3,1fr)}
-  .wrap{padding:22px}
-}
-
-/* cart fab styling (mobile friendly) */
-.cart-fab{position:fixed;right:14px;bottom:14px;z-index:200;padding:12px 14px;border-radius:999px;box-shadow:0 12px 36px rgba(0,0,0,0.16)}
-
-/* inputs */
-.input, input[type="text"], input[type="tel"], textarea, .qty {
-  width:100%; padding:10px; border-radius:10px; border:1px solid #e6e9ed; font-size:var(--text-base);
-  box-sizing:border-box;
-}
-
-/* Make sure long text wraps and no horizontal scroll */
-*{word-break:break-word}
-
-/* small tweaks for cart page totals/buttons */
-.totals{margin-top:12px;padding-top:12px;border-top:1px dashed #eee}
-
-  body{font-family:Inter,system-ui; margin:0;background:#fff;color:#0f1724}
-  .wrap{max-width:980px;margin:20px auto;padding:0 16px}
-  header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-  .card{display:flex;gap:12px;align-items:center;padding:12px;border-radius:10px;border:1px solid #eef2e7;margin-bottom:10px}
-  .card img{width:100px;height:80px;object-fit:cover;border-radius:8px}
-  .qty{width:90px;padding:8px;border-radius:8px;border:1px solid #e6e9ed}
-  .btn{background:#2f9e44;color:#fff;padding:10px 14px;border-radius:10px;border:none;cursor:pointer}
-  .small{color:#6b7280}
-  .totals{margin-top:10px;padding-top:10px;border-top:1px dashed #eee}
-  .actions{display:flex;gap:8px;margin-top:10px}
-  .input{padding:8px;border-radius:8px;border:1px solid #e6e9ed;width:100%}
-  label{display:block;font-size:13px;color:#6b7280;margin-bottom:6px}
-  .note{font-size:13px;color:#6b7280;margin-top:8px}
-</style>
-</head>
-<body>
-    <!-- Mobile / PWA friendly meta (paste into <head>) -->
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#2f9e44">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-  <div class="wrap">
-    <header>
-      <h2>Your Cart</h2>
-      <div><a href="/" class="small">Continue shopping</a></div>
-    </header>
-
-    <div id="cartList"></div>
-
-    <section style="margin-top:14px;border:1px solid #f0f0f0;padding:12px;border-radius:10px">
-      <h3>Customer details</h3>
-      <div>
-        <label for="custName">Name *</label>
-        <input id="custName" class="input" placeholder="Your full name">
-      </div>
-      <div style="margin-top:8px">
-        <label for="custPhone">Phone / WhatsApp *</label>
-        <input id="custPhone" class="input" placeholder="+91">
-      </div>
-      <div style="margin-top:8px">
-        <label for="custAddress">Delivery address *</label>
-        <textarea id="custAddress" class="input" rows="3" placeholder="Full delivery address"></textarea>
-      </div>
-      <div class="note">Minimum order 200 kg. For urgent orders call or WhatsApp: <a href="tel:+918553334247">+91 85533 34247</a></div>
-    </section>
-
-    <div class="totals">
-      <div class="small">Total items: <span id="totalItems">0</span></div>
-      <div class="small">Total kg: <span id="totalKg">0</span> kg</div>
-      <div class="small">Grand total: ₹ <span id="grandTotal">0.00</span></div>
-      <div class="actions">
-        <button id="checkoutBtn" class="btn">Place Order</button>
-        <button id="checkoutWhats" class="btn" style="background:#128C7E">Confirm via WhatsApp</button>
-        <button id="clearBtn" class="btn" style="background:transparent;color:#2f9e44;border:1px solid #2f9e44">Clear cart</button>
-      </div>
-      <p id="orderMsg" class="small" style="margin-top:8px"></p>
-    </div>
-
-    <footer style="margin-top:24px">
-      <div class="small">SDB Plantation · Near Basavanahalli Road, Chikkamagaluru · <a href="https://wa.me/918553334247">WhatsApp</a> · <a href="mailto:sdmplantation@gmail.com">sdmplantation@gmail.com</a></div>
-    </footer>
-  </div>
-<script>
-/* Small mobile UX: ensure elements are scrolled into view when input focused */
-(function(){
-  document.addEventListener('focusin', (e) => {
-    const el = e.target;
-    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
-      setTimeout(()=> {
-        try { el.scrollIntoView({behavior:'smooth', block:'center'}); } catch(e){}
-      }, 300);
+  function render(){
+    const cart = loadCart();
+    const list = document.getElementById('cartList');
+    if (!list) { console.error(LOG, 'cartList element missing'); return; }
+    list.innerHTML = '';
+    const items = Object.values(cart);
+    if (!items.length) {
+      list.innerHTML = '<div class="small">Your cart is empty. <a href="/">Continue shopping</a>.</div>';
+      updateTotals(items);
+      return;
     }
+    items.forEach(it => {
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.innerHTML = `
+        <img src="${escapeHtml(it.img)}" alt="${escapeHtml(it.name)}">
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <strong>${escapeHtml(it.name)}</strong>
+            <button data-sku="${escapeHtml(it.sku)}" class="remove">Remove</button>
+          </div>
+          <div style="margin-top:8px">
+            <div class="small">Price: ₹${Number(it.price).toFixed(2)} / kg</div>
+            <div style="margin-top:8px">
+              <label class="small">Qty (kg)</label>
+              <input class="qty" type="number" min="1" step="1" value="${it.qtyKg}" data-sku="${escapeHtml(it.sku)}">
+            </div>
+          </div>
+        </div>
+        <div style="min-width:120px;text-align:right">
+          <div class="small">Line total</div>
+          <div style="font-weight:900">₹${(it.qtyKg * it.price).toFixed(2)}</div>
+        </div>
+      `;
+      list.appendChild(div);
+    });
+    updateTotals(items);
+    const totalItemsEl = document.getElementById('totalItems');
+    if (totalItemsEl) totalItemsEl.textContent = items.length;
+  }
+
+  function updateTotals(items){
+    items = items || Object.values(loadCart());
+    const totalKg = items.reduce((s,i) => s + Number(i.qtyKg || 0), 0);
+    const grand = items.reduce((s,i) => s + (Number(i.qtyKg || 0) * Number(i.price || 0)), 0);
+    const totalKgEl = document.getElementById('totalKg');
+    const grandEl = document.getElementById('grandTotal');
+    if (totalKgEl) totalKgEl.textContent = totalKg;
+    if (grandEl) grandEl.textContent = grand.toFixed(2);
+  }
+
+  // Build WA message string (encoded later)
+  function buildWhatsAppMessage(payload, name, phone){
+    let msg = `Order from ${name} (${phone})%0A`;
+    payload.items.forEach(it => { msg += `- ${it.name}: ${it.qtyKg} kg @ ₹${it.price}/kg = ₹${(it.qtyKg*it.price).toFixed(2)}%0A`; });
+    msg += `%0ATotal items: ${payload.items.length}%0ATotal kg: ${payload.totalKg}%0AGrand total: ₹${payload.totalAmount.toFixed(2)}`;
+    return msg;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    render();
+    const list = document.getElementById('cartList');
+
+    // removal (delegate)
+    list.addEventListener('click', (e) => {
+      const btn = e.target.closest && e.target.closest('.remove');
+      if (btn) {
+        const sku = btn.dataset.sku;
+        const cart = loadCart();
+        if (cart[sku]) { delete cart[sku]; saveCart(cart); log('removed', sku); }
+      }
+    });
+
+    // qty change (delegate)
+    list.addEventListener('input', (e) => {
+      if (e.target.classList.contains('qty')) {
+        const sku = e.target.dataset.sku;
+        let val = Math.round(Number(e.target.value) || 0);
+        if (!val || val < 1) val = 1;
+        const cart = loadCart();
+        if (cart[sku]) { cart[sku].qtyKg = val; saveCart(cart); log('qty updated', sku, val); }
+      }
+    });
+
+    // clear cart
+    document.getElementById('clearBtn')?.addEventListener('click', () => {
+      if (!confirm('Clear cart?')) return;
+      localStorage.removeItem(CART_KEY);
+      render();
+    });
+
+    // PLACE ORDER — send to /order and WAIT for server response
+    document.getElementById('checkoutBtn')?.addEventListener('click', async () => {
+      const cart = loadCart(); const items = Object.values(cart);
+      if (!items.length){ alert('Cart empty'); return; }
+      const name = document.getElementById('custName')?.value?.trim(); const phone = document.getElementById('custPhone')?.value?.trim();
+      const address = document.getElementById('custAddress')?.value?.trim();
+      if (!name || !phone || !address){ alert('Enter name, phone & address'); return; }
+
+      // build payload
+      const payload = {
+        customer:{ name, phone, address },
+        items: items.map(it => ({ sku: it.sku, name: it.name, qtyKg: Number(it.qtyKg), price: Number(it.price), img: it.img })),
+        totalKg: items.reduce((s,i)=> s + Number(i.qtyKg || 0), 0),
+        totalAmount: items.reduce((s,i)=> s + (Number(i.qtyKg || 0) * Number(i.price || 0)), 0)
+      };
+
+      // disable button while posting
+      const checkoutBtn = document.getElementById('checkoutBtn');
+      const checkoutWhats = document.getElementById('checkoutWhats');
+      checkoutBtn.disabled = true;
+      checkoutBtn.textContent = 'Placing order...';
+      document.getElementById('orderMsg').textContent = '';
+
+      try {
+        const res = await fetch('/order', {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (json && json.success) {
+          // friendly thank-you (NO ID shown)
+          document.getElementById('orderMsg').textContent = 'Thank you — our team will contact you shortly.';
+          // clear local cart now that server saved it
+          localStorage.removeItem(CART_KEY);
+          render();
+
+          // enable WhatsApp button and set behavior — but DO NOT auto-open
+          if (checkoutWhats) {
+            checkoutWhats.disabled = false;
+            checkoutWhats.onclick = () => {
+              const wa = buildWhatsAppMessage(payload, name, phone);
+              window.open(`https://wa.me/918553334247?text=${encodeURIComponent(wa)}`, '_blank');
+            };
+          }
+        } else {
+          // server returned non-success
+          console.error('order save failed', json);
+          document.getElementById('orderMsg').textContent = 'Server error saving order. Try again.';
+        }
+      } catch (err) {
+        console.error('network/order error', err);
+        document.getElementById('orderMsg').textContent = 'Network error saving order.';
+      } finally {
+        // restore button
+        if (checkoutBtn) { checkoutBtn.disabled = false; checkoutBtn.textContent = 'Place Order'; }
+      }
+    });
+
+    // Confirm via WhatsApp (manual) — keep disabled until server success
+    const checkoutWhatsBtn = document.getElementById('checkoutWhats');
+    if (checkoutWhatsBtn) {
+      checkoutWhatsBtn.disabled = true;
+      checkoutWhatsBtn.addEventListener('click', () => {
+        const cart = loadCart(); const items = Object.values(cart);
+        if (!items.length) { alert('Cart empty'); return; }
+        let msg = 'Hello SDB Plantation, I would like to order:%0A';
+        items.forEach(it => msg += `- ${it.name}: ${it.qtyKg} kg @ ₹${it.price}/kg = ₹${(it.qtyKg*it.price).toFixed(2)}%0A`);
+        msg += `%0ATotal items: ${items.length}%0ATotal kg: ${items.reduce((s,i)=>s+Number(i.qtyKg||0),0)} kg%0AGrand total: ₹${items.reduce((s,i)=>s + (Number(i.qtyKg||0)*Number(i.price||0)),0).toFixed(2)}`;
+        window.open(`https://wa.me/918553334247?text=${msg}`, '_blank');
+      });
+    }
+
+    log('cart handlers bound');
   });
+
 })();
-</script>
-  <script src="/cart.js"></script>
-</body>
-</html>
