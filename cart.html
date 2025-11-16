@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cart — SDB Plantation</title>
+<style>
+  body{font-family:Inter,system-ui; margin:0;background:#fff;color:#0f1724}
+  .wrap{max-width:980px;margin:20px auto;padding:0 16px}
+  header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .card{display:flex;gap:12px;align-items:center;padding:12px;border-radius:10px;border:1px solid #eef2e7;margin-bottom:10px}
+  .card img{width:100px;height:80px;object-fit:cover;border-radius:8px}
+  .qty{width:90px;padding:8px;border-radius:8px;border:1px solid #e6e9ed}
+  .btn{background:#2f9e44;color:#fff;padding:10px 14px;border-radius:10px;border:none;cursor:pointer}
+  .small{color:#6b7280}
+  .totals{margin-top:10px;padding-top:10px;border-top:1px dashed #eee}
+  .actions{display:flex;gap:8px;margin-top:10px}
+  .input{padding:8px;border-radius:8px;border:1px solid #e6e9ed;width:100%}
+  label{display:block;font-size:13px;color:#6b7280;margin-bottom:6px}
+  .note{font-size:13px;color:#6b7280;margin-top:8px}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h2>Your Cart</h2>
+      <div><a href="/" class="small">Continue shopping</a></div>
+    </header>
+
+    <div id="cartList"></div>
+
+    <section style="margin-top:14px;border:1px solid #f0f0f0;padding:12px;border-radius:10px">
+      <h3>Customer details</h3>
+      <div>
+        <label for="custName">Name *</label>
+        <input id="custName" class="input" placeholder="Your full name">
+      </div>
+      <div style="margin-top:8px">
+        <label for="custPhone">Phone / WhatsApp *</label>
+        <input id="custPhone" class="input" placeholder="+91">
+      </div>
+      <div style="margin-top:8px">
+        <label for="custAddress">Delivery address *</label>
+        <textarea id="custAddress" class="input" rows="3" placeholder="Full delivery address"></textarea>
+      </div>
+      <div class="note">Minimum order 200 kg. For urgent orders call or WhatsApp: <a href="tel:+918553334247">+91 85533 34247</a></div>
+    </section>
+
+    <div class="totals">
+      <div class="small">Total items: <span id="totalItems">0</span></div>
+      <div class="small">Total kg: <span id="totalKg">0</span> kg</div>
+      <div class="small">Grand total: ₹ <span id="grandTotal">0.00</span></div>
+      <div class="actions">
+        <button id="checkoutBtn" class="btn">Place Order</button>
+        <button id="checkoutWhats" class="btn" style="background:#128C7E">Confirm via WhatsApp</button>
+        <button id="clearBtn" class="btn" style="background:transparent;color:#2f9e44;border:1px solid #2f9e44">Clear cart</button>
+      </div>
+      <p id="orderMsg" class="small" style="margin-top:8px"></p>
+    </div>
+
+    <footer style="margin-top:24px">
+      <div class="small">SDB Plantation · Near Basavanahalli Road, Chikkamagaluru · <a href="https://wa.me/918553334247">WhatsApp</a> · <a href="mailto:sdmplantation@gmail.com">sdmplantation@gmail.com</a></div>
+    </footer>
+  </div>
+
+  <script src="/cart.js"></script>
+</body>
+</html>
