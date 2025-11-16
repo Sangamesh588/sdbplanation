@@ -33,23 +33,21 @@
     items.forEach(it => {
       const div = document.createElement('div');
       div.className = 'card';
-      // Ensure name is displayed clearly and qty input has stable value
-    div.innerHTML = `
-  <img src="${escapeHtml(it.img)}" alt="${escapeHtml(it.name)}">
+    div.className = "cart-item";
+div.innerHTML = `
+  <img src="${escapeHtml(it.img)}" alt="${escapeHtml(it.name)}" class="item-img">
 
-  <div class="meta">
-    <strong>${escapeHtml(it.name)}</strong>
-    <div class="small">₹${Number(it.price).toFixed(2)} / kg</div>
-  </div>
+  <div class="item-info">
+    <h3 class="item-title">${escapeHtml(it.name)}</h3>
+    <div class="item-price">₹${Number(it.price).toFixed(2)} / kg</div>
 
-  <div class="controls">
-    <div class="stepper">
-      <button class="qty-minus" data-sku="${escapeHtml(it.sku)}">−</button>
-      <input class="qty" type="number" min="1" value="${it.qtyKg}" data-sku="${escapeHtml(it.sku)}">
-      <button class="qty-plus" data-sku="${escapeHtml(it.sku)}">+</button>
+    <div class="qty-row">
+      <button class="qty-btn qty-minus" data-sku="${escapeHtml(it.sku)}">−</button>
+      <input class="qty-input" type="number" min="1" step="1" value="${it.qtyKg}" data-sku="${escapeHtml(it.sku)}">
+      <button class="qty-btn qty-plus" data-sku="${escapeHtml(it.sku)}">+</button>
     </div>
 
-    <div class="lineTotal">₹${(Number(it.qtyKg) * Number(it.price)).toFixed(2)}</div>
+    <div class="line-total">₹${(it.qtyKg * it.price).toFixed(2)}</div>
   </div>
 `;
 
@@ -129,41 +127,38 @@ list.addEventListener('click', (e) => {
 });
 
 // input handler — manual typing (no full re-render)
-list.addEventListener('input', (e) => {
-  if (e.target.classList.contains('qty')) {
+llist.addEventListener("click", (e) => {
+  const plus = e.target.closest(".qty-plus");
+  const minus = e.target.closest(".qty-minus");
+  if (!plus && !minus) return;
+
+  const sku = (plus || minus).dataset.sku;
+  const cart = loadCart();
+  if (!cart[sku]) return;
+
+  let qty = Number(cart[sku].qtyKg);
+  qty = plus ? qty + 1 : Math.max(1, qty - 1);
+
+  cart[sku].qtyKg = qty;
+  saveCart(cart);
+
+  render();
+});
+
+list.addEventListener("input", (e) => {
+  if (e.target.classList.contains("qty-input")) {
     const sku = e.target.dataset.sku;
-    // allow typing, but sanitize to integer >=1 on blur (not immediately)
-    let raw = e.target.value;
-    // accept '' while typing, but if becomes empty set to 1 on blur
-    // use a relaxed parse here; final sanitization on blur
-    let val = Number(raw);
-    if (Number.isNaN(val)) return; // let user type
-    val = Math.round(val);
-    if (val < 1) val = 1;
-    // update localStorage WITHOUT triggering full rerender (save only)
+    let v = Number(e.target.value);
+    if (!v || v < 1) v = 1;
+
     const cart = loadCart();
-    if (cart[sku]) {
-      cart[sku].qtyKg = val;
-      saveCart(cart, false);
-      updateLineTotalDOM(sku);
-    }
+    cart[sku].qtyKg = v;
+    saveCart(cart);
+
+    render();
   }
 });
 
-// blur handler to ensure caret doesn't jump: sanitize final input value
-list.addEventListener('blur', (e) => {
-  if (e.target.classList && e.target.classList.contains('qty')) {
-    const sku = e.target.dataset.sku;
-    let val = Math.round(Number(e.target.value) || 0);
-    if (!val || val < 1) val = 1;
-    e.target.value = val;
-    const cart = loadCart();
-    if (cart[sku]) {
-      cart[sku].qtyKg = val;
-      saveCart(cart, true); // persist and re-render to keep DOM consistent
-    }
-  }
-}, true);
 
 
     document.getElementById('clearBtn')?.addEventListener('click', () => {
