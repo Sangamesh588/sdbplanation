@@ -37,18 +37,62 @@
   }
 
   // Render full cart list into #cartList
-  function render(){
-    const cart = loadCart();
-    const list = document.getElementById('cartList');
-    if (!list) { err('No #cartList element found'); return; }
+function render() {
+  const cart = loadCart();
+  const list = document.getElementById("cartList");
 
-    list.innerHTML = '';
-    const items = Object.values(cart || {});
-    if (!items.length) {
-      list.innerHTML = '<div class="small">Your cart is empty. <a href="/">Continue shopping</a>.</div>';
-      updateTotals(items);
-      return;
-    }
+  list.innerHTML = "";
+  const items = Object.values(cart);
+
+  if (!items.length) {
+    list.innerHTML = `<div class="small">Your cart is empty. <a href="/">Continue shopping</a>.</div>`;
+    updateTotals(items);
+    return;
+  }
+
+  items.forEach(it => {
+    const div = document.createElement("div");
+    div.className = "cart-item";
+
+    const carats = it.qtyKg / 20;
+    const caratLabel = carats > 0
+      ? `(${carats % 1 === 0 ? carats + " carat" : carats.toFixed(2) + " carats"})`
+      : "";
+
+    div.innerHTML = `
+      <img src="${escapeHtml(it.img)}" class="item-img">
+
+      <div class="item-info">
+        <h3 class="item-title">${escapeHtml(it.name)}</h3>
+        <div class="item-price">₹${Number(it.price).toFixed(2)} / kg</div>
+
+        <div class="qty-row">
+          <label style="font-weight:600;">Qty:</label>
+          <input 
+            class="qty-input"
+            type="number"
+            min="1"
+            step="1"
+            data-sku="${escapeHtml(it.sku)}"
+            value="${it.qtyKg}"
+          >
+          <span class="carat-label">${caratLabel}</span>
+        </div>
+
+        <div class="line-total">
+          ₹${(it.qtyKg * it.price).toFixed(2)}
+        </div>
+      </div>
+
+      <button class="remove" data-sku="${escapeHtml(it.sku)}">Remove</button>
+    `;
+
+    list.appendChild(div);
+  });
+
+  updateTotals(items);
+}
+
 
     // create fragment for better perf
     const frag = document.createDocumentFragment();
@@ -269,3 +313,4 @@
     loadCart, saveCart, render, clearCart
   };
 })();
+
