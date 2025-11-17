@@ -127,6 +127,8 @@ list.addEventListener('click', (e) => {
 });
 
 // input handler — manual typing (no full re-render)
+// Ensure llist exists and points to the cart list container
+var llist = document.querySelector('#cartList') || document.querySelector('.cart-list') || document.getElementById('cartList') || document.body;
 llist.addEventListener("click", (e) => {
   const plus = e.target.closest(".qty-plus");
   const minus = e.target.closest(".qty-minus");
