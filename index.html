@@ -530,93 +530,6 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;pa
    It WILL bind .add-btn buttons, update counts, persist cart, and NOT redirect.
    Remove this later once everything is confirmed working.
 */
-(function(){
-  const CART_KEY = 'cartItems';
-
-  function readCart(){ try { return JSON.parse(localStorage.getItem(CART_KEY) || '[]'); } catch(e){ return []; } }
-  function writeCart(v){ localStorage.setItem(CART_KEY, JSON.stringify(v)); window.dispatchEvent(new Event('cart.updated')); }
-
-  function updateBadge(){
-    const total = readCart().reduce((s,i)=> s + (Number(i.qty)||0), 0);
-    const el = document.getElementById('cartBadge'); if (el) el.textContent = total;
-  }
-
-  // sanitize input in place while preserving caret position
-  function sanitizeNumericInput(inp) {
-    const orig = inp.value;
-    // allow only digits (no decimals) and trim leading zeros only if the user typed more than 1 digit
-    // but preserve the string shape the user expects while typing
-    const beforeSel = inp.selectionStart;
-    // remove any non-digit characters
-    let cleaned = orig.replace(/[^\d]/g, '');
-    // avoid empty string while typing: allow '' to become '' (we enforce min 1 on Add-to-cart)
-    if (cleaned !== orig) {
-      // compute caret offset from the end to restore reasonable caret place
-      const rightChars = orig.length - beforeSel;
-      inp.value = cleaned;
-      // restore caret near same logical position
-      const newPos = Math.max(0, inp.value.length - rightChars);
-      try { inp.setSelectionRange(newPos, newPos); } catch(e) {}
-    }
-  }
-
-  // delegate input sanitization for quantity inputs
-  document.addEventListener('input', (e) => {
-    const inp = e.target.closest('.prod-qty');
-    if (!inp) return;
-    // sanitize but do not replace element or call any function that re-renders UI
-    sanitizeNumericInput(inp);
-  }, { capture: false, passive: true });
-
-  // prevent Enter from submitting forms or blurring unexpectedly
-  document.addEventListener('keydown', (e) => {
-    const el = e.target;
-    if (el && el.classList && el.classList.contains('prod-qty') && e.key === 'Enter') {
-      e.preventDefault();
-      // move focus to the Add-to-cart button next to this input (if present)
-      const card = el.closest('.product-card');
-      const btn = card?.querySelector('.add-to-cart');
-      if (btn) btn.focus();
-    }
-  });
-
-  // Add-to-cart handler (delegated)
-  document.addEventListener('click', (e) => {
-    const btn = e.target.closest('.add-to-cart');
-    if (!btn) return;
-    e.preventDefault();
-    const card = btn.closest('.product-card');
-    if (!card) return alert('Product info missing.');
-    const id = card.dataset.id;
-    const name = card.dataset.name || (card.querySelector('.product-title')?.textContent || '').trim();
-    const price = parseFloat(card.dataset.price || card.querySelector('.price')?.textContent || 0) || 0;
-    const image = card.dataset.image || '';
-    const qtyInput = card.querySelector('.prod-qty');
-    const raw = (qtyInput?.value || '').trim();
-    const qty = Math.max(0, Math.floor(Number(raw || 0)));
-    if (qty <= 0) { qtyInput?.focus(); return alert('Enter quantity (kg) >= 1'); }
-
-    const cart = readCart();
-    const idx = cart.findIndex(x => x.id === id);
-    if (idx >= 0) cart[idx].qty = cart[idx].qty + qty;
-    else cart.push({ id, name, price, qty, image });
-    writeCart(cart);
-    updateBadge();
-    // keep focus on the qty input so user can continue typing if desired
-    qtyInput?.focus();
-    // move caret to end
-    try { const len = String(qtyInput.value || '').length; qtyInput.setSelectionRange(len, len); } catch(e) {}
-    // lightweight feedback
-    const msg = `${qty} kg of "${name}" added to cart.`;
-    // small non-blocking feedback (no alert) — a console log and a short temporary title update
-    console.log(msg);
-  });
-
-  // initial badge update and storage sync
-  document.addEventListener('DOMContentLoaded', updateBadge);
-  window.addEventListener('storage', updateBadge);
-  window.addEventListener('cart.updated', updateBadge);
-})();
 
 /* Small mobile UX: ensure elements are scrolled into view when input focused */
 (function(){
@@ -819,17 +732,6 @@ requestAnimationFrame(()=> {
     setTimeout(()=> el.style.display = '', 60);
   });
 });
-openCart.addEventListener('click', (e)=>{ 
-  if (!e.isTrusted) return; // ignore fake / automatic clicks
-  e.preventDefault(); 
-  window.location.href='/cart.html'; 
-});
-fab.addEventListener('click', (e)=>{ 
-  if (!e.isTrusted) return; 
-  e.preventDefault(); 
-  window.location.href='/cart.html'; 
-});
-
 
 </script>
 <!-- ---- END INLINE FIX ---- -->
