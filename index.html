@@ -363,7 +363,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;pa
     <section>
       <div class="small">Farm → Market · Fresh daily</div>
       <h2 style="margin:6px 0">Fresh wholesale bananas — delivered reliably</h2>
-      <p class="small">Minimum order 100 kg. Add items to cart, then review and place order on the cart page.</p>
+      <p class="small">Minimum order 10 kg. Add items to cart, then review and place order on the cart page.</p>
 
       <!-- Key info (fast delivery etc.) -->
       <div class="info-grid" aria-hidden="false">
@@ -429,10 +429,10 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;pa
           </div>
         </div>
 
-        <div class="card" data-sku="greenbanana" data-name="green banana" data-price="50">
-          <img src="green.banana.jpg" alt="green banana">
+        <div class="card" data-sku=" robusta greenbanana" data-name=" robusta green banana" data-price="50">
+          <img src="green.banana.jpg" alt=" robusta green banana">
           <div class="body">
-            <h3>green banana</h3>
+            <h3> robusta green banana</h3>
             <p class="small">Bulk grade for processors & wholesalers.</p>
             <div class="price">₹50 / kg</div>
             <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
@@ -551,7 +551,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;pa
     console.log('[INLINE-FIX] binding add buttons');
 
     const KEY = 'sdb_cart_v3';
-    const DEFAULT_KG = 100;
+    const DEFAULT_KG = 10;
 
     function safeParse(v){ try { return JSON.parse(v || '{}'); } catch(e){ console.error('[INLINE-FIX] parse', e); return {}; } }
     function loadCart(){ return safeParse(localStorage.getItem(KEY)); }
