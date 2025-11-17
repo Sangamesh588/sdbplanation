@@ -1,251 +1,271 @@
-// cart.js — improved: non-destructive qty input, smaller mobile images, immediate totals update
-(() => {
+// cart.js — Clean, safe, full-featured cart page script
+(function () {
   const CART_KEY = 'sdb_cart_v3';
+  const PENDING_KEY = 'pendingOrders';
   const LOG = '[cart]';
   function log(...a){ try{ console.log(LOG, ...a) }catch(e){} }
   function err(...a){ try{ console.error(LOG, ...a) }catch(e){} }
 
-  function safeParse(v){ try{ return JSON.parse(v||'{}'); } catch(e){ err('parse error', e); return {}; } }
+  // safe JSON parse
+  function safeParse(v){ try { return JSON.parse(v || '{}'); } catch(e) { err('parse', e); return {}; } }
   function loadCart(){ return safeParse(localStorage.getItem(CART_KEY)); }
-
-  // saveCart optionally avoids calling render (so input caret isn't lost)
-  function saveCart(cart, renderNow = true){
-    try{
+  function saveCart(cart, { renderNow=true } = {}) {
+    try {
       localStorage.setItem(CART_KEY, JSON.stringify(cart));
+      // notify other tabs
+      try { localStorage.setItem('cartUpdatedAt', Date.now().toString()); } catch(e){}
       if (renderNow) render();
-    }catch(e){ err('save error', e) }
+    } catch(e) { err('saveCart', e); }
   }
 
-  function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, m=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m])); }
+  function escapeHtml(s){ if (!s && s !== 0) return ''; return String(s).replace(/[&<>"']/g, m=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m])); }
 
-  // Render whole list (used for initial render, after remove/clear, after order)
+  // carats helper: 1 carat = 20 kg
+  function caratsFromKg(kg){
+    const n = Number(kg) || 0;
+    if (n <= 0) return '';
+    const c = n / 20;
+    // show integer as "1 carat" else "1.25 carats"
+    return c % 1 === 0 ? `${c} carat${c===1?'':'s'}` : `${c.toFixed(2)} carats`;
+  }
+
+  // totals helper
+  function computeTotals(items){
+    const totalKg = items.reduce((s,i) => s + (Number(i.qtyKg)||0), 0);
+    const totalAmount = items.reduce((s,i) => s + ((Number(i.qtyKg)||0) * (Number(i.price)||0)), 0);
+    return { totalKg, totalAmount };
+  }
+
+  // Render full cart list into #cartList
   function render(){
     const cart = loadCart();
     const list = document.getElementById('cartList');
-    if (!list) { err('cartList element missing'); return; }
+    if (!list) { err('No #cartList element found'); return; }
+
     list.innerHTML = '';
-    const items = Object.values(cart);
+    const items = Object.values(cart || {});
     if (!items.length) {
       list.innerHTML = '<div class="small">Your cart is empty. <a href="/">Continue shopping</a>.</div>';
       updateTotals(items);
       return;
     }
+
+    // create fragment for better perf
+    const frag = document.createDocumentFragment();
     items.forEach(it => {
-      const div = document.createElement('div');
-      div.className = 'card';
-    div.className = "cart-item";
-<div class="item-info">
-  <h3 class="item-title">${escapeHtml(it.name)}</h3>
+      const sku = it.sku || it.SKU || '';
+      const imgSrc = escapeHtml(it.img || '/images/placeholder.png');
+      const name = escapeHtml(it.name || sku || 'Item');
+      const priceNum = Number(it.price) || 0;
+      const qtyKg = Number(it.qtyKg) || 0;
+      const lineTotal = (priceNum * qtyKg);
 
-  <div class="item-price">₹${Number(it.price).toFixed(2)} / kg</div>
+      // container
+      const card = document.createElement('div');
+      card.className = 'card cart-item';
+      card.dataset.sku = sku;
 
-  <div class="qty-row" style="margin-top:8px;">
-    Quantity: <strong>${it.qtyKg}</strong> kg
-    <span style="color:#2f9e44; font-weight:700; margin-left:6px;">
-      (${(it.qtyKg / 20).toFixed(2)} carat${(it.qtyKg / 20) == 1 ? "" : "s"})
-    </span>
-  </div>
+      // inner HTML (kept safe with escapeHtml)
+      card.innerHTML = `
+        <div style="display:flex;gap:12px;align-items:center;">
+          <img src="${imgSrc}" alt="${name}" style="width:86px;height:86px;object-fit:cover;border-radius:8px;flex-shrink:0">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
+              <div style="min-width:0">
+                <h3 style="margin:0;font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</h3>
+                <div style="color:#6b7280;margin-top:6px">₹${priceNum.toFixed(2)} / kg</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+                <button class="remove-btn" data-sku="${escapeHtml(sku)}" type="button" style="background:#fff;border:1px solid #f0e6e6;padding:6px 8px;border-radius:8px;cursor:pointer">Remove</button>
+                <div style="font-weight:900;font-size:18px">₹ ${lineTotal.toFixed(2)}</div>
+              </div>
+            </div>
 
-  <div class="line-total" style="margin-top:10px;">
-    ₹${(it.qtyKg * it.price).toFixed(2)}
-  </div>
-</div>
-`;
+            <div style="margin-top:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+              <div>Quantity: <strong>${qtyKg}</strong> kg</div>
+              <div style="color:#2f9e44;font-weight:700">(${caratsFromKg(qtyKg)})</div>
+            </div>
+          </div>
+        </div>
+      `;
 
-      function caratsFromKg(kg) {
-  if (!kg || kg <= 0) return "";
-  const c = kg / 20;
-  // format: 1 carat, 1.5 carats, 2 carats
-  return `(${c % 1 === 0 ? c + " carat" : c.toFixed(2) + " carats"})`;
-}
-
-
-      list.appendChild(div);
+      frag.appendChild(card);
     });
+
+    list.appendChild(frag);
     updateTotals(items);
-    const totalItemsEl = document.getElementById('totalItems');
-    if (totalItemsEl) totalItemsEl.textContent = items.length;
   }
 
   function updateTotals(items){
-    items = items || Object.values(loadCart());
-    const totalKg = items.reduce((s,i) => s + Number(i.qtyKg || 0), 0);
-    const grand = items.reduce((s,i) => s + (Number(i.qtyKg || 0) * Number(i.price || 0)), 0);
+    items = items || Object.values(loadCart() || {});
+    const { totalKg, totalAmount } = computeTotals(items);
+    const totalItemsEl = document.getElementById('totalItems');
     const totalKgEl = document.getElementById('totalKg');
     const grandEl = document.getElementById('grandTotal');
-    if (totalKgEl) totalKgEl.textContent = totalKg;
-    if (grandEl) grandEl.textContent = grand.toFixed(2);
-    // update header/fab counts
-    const count = items.length;
-    const elHead = document.getElementById('cartCount'); if (elHead) elHead.textContent = count;
-    const elFab = document.getElementById('cartFabCount'); if (elFab) elFab.textContent = count;
+    const headerCount = document.getElementById('cartCount');
+    const fabCount = document.getElementById('cartFabCount');
+
+    if (totalItemsEl) totalItemsEl.textContent = String(items.length || 0);
+    if (totalKgEl) totalKgEl.textContent = String(totalKg || 0);
+    if (grandEl) grandEl.textContent = (totalAmount || 0).toFixed(2);
+    if (headerCount) headerCount.textContent = String(items.length || 0);
+    if (fabCount) fabCount.textContent = String(items.length || 0);
   }
 
-  // Update only the line total DOM for a given SKU (no full re-render)
-  function updateLineTotalDOM(sku){
+  // Remove item handler (delegated)
+  function handleRemove(sku){
     const cart = loadCart();
-    const data = cart[sku];
-    if (!data) return;
-    // find the input and the .lineTotal for this sku
-    const input = document.querySelector(`input.qty[data-sku="${CSS.escape(sku)}"]`);
-    const line = input?.closest('.card')?.querySelector('.lineTotal');
-    if (line) line.textContent = '₹' + (Number(data.qtyKg) * Number(data.price)).toFixed(2);
-    updateTotals(Object.values(cart));
+    if (!cart || !cart[sku]) return;
+    delete cart[sku];
+    saveCart(cart, { renderNow: true });
   }
 
-  // Build WA message string (encoded later)
-  function buildWhatsAppMessage(payload, name, phone){
-    let msg = `Order from ${name} (${phone})%0A`;
-    payload.items.forEach(it => { msg += `- ${it.name}: ${it.qtyKg} kg @ ₹${it.price}/kg = ₹${(it.qtyKg*it.price).toFixed(2)}%0A`; });
-    msg += `%0ATotal items: ${payload.items.length}%0ATotal kg: ${payload.totalKg}%0AGrand total: ₹${payload.totalAmount.toFixed(2)}`;
-    return msg;
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    render();
-    const list = document.getElementById('cartList');
-// delegated handlers: clicks (remove, plus, minus) and input (manual quantity)
-list.addEventListener('click', (e) => {
-  // Remove button
-  const rem = e.target.closest && e.target.closest('.remove');
-  if (rem) {
-    const sku = rem.dataset.sku;
-    const cart = loadCart();
-    if (cart[sku]) { delete cart[sku]; saveCart(cart, true); log('removed', sku); }
-    return;
-  }
-
-  // Stepper plus/minus
-  const plus = e.target.closest && e.target.closest('.qty-plus');
-  const minus = e.target.closest && e.target.closest('.qty-minus');
-  if (plus || minus) {
-    const btn = plus || minus;
-    const sku = btn.dataset.sku;
-    const cart = loadCart();
-    if (!cart[sku]) return;
-    let cur = Number(cart[sku].qtyKg) || 0;
-    cur = plus ? (cur + 1) : Math.max(1, cur - 1);
-    cart[sku].qtyKg = cur;
-    saveCart(cart, false);         // persist but avoid full re-render
-    // update DOM input value if present
-    const input = document.querySelector(`input.qty[data-sku="${CSS.escape(sku)}"]`);
-    if (input) input.value = cur;
-    updateLineTotalDOM(sku);
-    return;
-  }
-});
-
-// input handler — manual typing (no full re-render)
-// Ensure llist exists and points to the cart list container
-var llist = document.querySelector('#cartList') || document.querySelector('.cart-list') || document.getElementById('cartList') || document.body;
-llist.addEventListener("click", (e) => {
-  const plus = e.target.closest(".qty-plus");
-  const minus = e.target.closest(".qty-minus");
-  if (!plus && !minus) return;
-
-  const sku = (plus || minus).dataset.sku;
-  const cart = loadCart();
-  if (!cart[sku]) return;
-
-  let qty = Number(cart[sku].qtyKg);
-  qty = plus ? qty + 1 : Math.max(1, qty - 1);
-
-  cart[sku].qtyKg = qty;
-  saveCart(cart);
-
-  render();
-});
-
-list.addEventListener("input", (e) => {
-  if (e.target.classList.contains("qty-input")) {
-    const sku = e.target.dataset.sku;
-    let v = Number(e.target.value);
-    if (!v || v < 1) v = 1;
-
-    const cart = loadCart();
-    cart[sku].qtyKg = v;
-    saveCart(cart);
-
+  // Clear cart
+  function clearCart(){
+    localStorage.removeItem(CART_KEY);
+    // also notify
+    try { localStorage.setItem('cartUpdatedAt', Date.now().toString()); } catch(e){}
     render();
   }
-});
 
+  // Save pending orders locally (fallback if server unavailable)
+  function savePendingOrder(payload){
+    try {
+      const arr = safeParse(localStorage.getItem(PENDING_KEY) || '[]');
+      arr.push(payload);
+      localStorage.setItem(PENDING_KEY, JSON.stringify(arr));
+    } catch(e){ err('save pending', e); }
+  }
 
-
-    document.getElementById('clearBtn')?.addEventListener('click', () => {
-      if (!confirm('Clear cart?')) return;
-      localStorage.removeItem(CART_KEY);
-      render();
+  // Build WhatsApp text (encoded later)
+  function buildWhatsAppText(payload){
+    const cust = payload.customer || {};
+    let txt = `Order from ${cust.name||'-'} (${cust.phone||'-'})%0A`;
+    payload.items.forEach(it => {
+      txt += `- ${it.name}: ${it.qtyKg} kg @ ₹${Number(it.price).toFixed(2)}/kg = ₹${(Number(it.qtyKg)||0 * Number(it.price)||0).toFixed(2)}%0A`;
     });
+    txt += `%0ATotal kg: ${payload.totalKg}%0AGrand total: ₹${payload.totalAmount.toFixed(2)}`;
+    return txt;
+  }
 
-    // PLACE ORDER — send to /order and WAIT for server response
-    document.getElementById('checkoutBtn')?.addEventListener('click', async () => {
-      const cart = loadCart(); const items = Object.values(cart);
-      if (!items.length){ alert('Cart empty'); return; }
-      const name = document.getElementById('custName')?.value?.trim(); const phone = document.getElementById('custPhone')?.value?.trim();
-      const address = document.getElementById('custAddress')?.value?.trim();
-      if (!name || !phone || !address){ alert('Enter name, phone & address'); return; }
+  // Place order (POST to /order)
+  async function placeOrder(){
+    const cart = loadCart();
+    const items = Object.values(cart || {});
+    if (!items.length) { alert('Cart empty'); return; }
 
-      const payload = {
-        customer:{ name, phone, address },
-        items: items.map(it => ({ sku: it.sku, name: it.name, qtyKg: Number(it.qtyKg), price: Number(it.price), img: it.img })),
-        totalKg: items.reduce((s,i)=> s + Number(i.qtyKg || 0), 0),
-        totalAmount: items.reduce((s,i)=> s + (Number(i.qtyKg || 0) * Number(i.price || 0)), 0)
-      };
+    const name = document.getElementById('custName')?.value?.trim();
+    const phone = document.getElementById('custPhone')?.value?.trim();
+    const address = document.getElementById('custAddress')?.value?.trim();
+    if (!name || !phone || !address) { alert('Please fill name, phone and address'); return; }
 
-      const checkoutBtn = document.getElementById('checkoutBtn');
-      const checkoutWhats = document.getElementById('checkoutWhats');
-      checkoutBtn.disabled = true;
-      checkoutBtn.textContent = 'Placing order...';
-      document.getElementById('orderMsg').textContent = '';
+    const payload = {
+      customer: { name, phone, address },
+      items: items.map(it => ({
+        sku: it.sku, name: it.name, qtyKg: Number(it.qtyKg)||0, price: Number(it.price)||0, img: it.img || ''
+      })),
+      totalKg: items.reduce((s,i) => s + (Number(i.qtyKg)||0), 0),
+      totalAmount: items.reduce((s,i) => s + ((Number(i.qtyKg)||0) * (Number(i.price)||0)), 0)
+    };
 
-      try {
-        const res = await fetch('/order', {
-          method:'POST',
-          headers:{ 'Content-Type':'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const json = await res.json();
-        if (json && json.success) {
-          document.getElementById('orderMsg').textContent = 'Thank you — our team will contact you shortly.';
-          localStorage.removeItem(CART_KEY);
-          render();
-          if (checkoutWhats) {
-            checkoutWhats.disabled = false;
-            checkoutWhats.onclick = () => {
-              const wa = buildWhatsAppMessage(payload, name, phone);
-              window.open(`https://wa.me/918553334247?text=${encodeURIComponent(wa)}`, '_blank');
-            };
-          }
-        } else {
-          console.error('order save failed', json);
-          document.getElementById('orderMsg').textContent = 'Server error saving order. Try again.';
+    const btn = document.getElementById('checkoutBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Placing order...'; }
+    document.getElementById('orderMsg') && (document.getElementById('orderMsg').textContent = '');
+
+    try {
+      const res = await fetch('/order', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json().catch(()=>({}));
+      if (res.ok && json && json.success) {
+        document.getElementById('orderMsg') && (document.getElementById('orderMsg').textContent = json.message || 'Thank you — our team will contact you shortly.');
+        // clear cart
+        localStorage.removeItem(CART_KEY);
+        render();
+        // enable WhatsApp confirm if present
+        const waBtn = document.getElementById('checkoutWhats');
+        if (waBtn) {
+          waBtn.disabled = false;
+          waBtn.onclick = () => {
+            const wa = buildWhatsAppText(payload);
+            window.open(`https://wa.me/918553334247?text=${encodeURIComponent(wa)}`, '_blank');
+          };
         }
-      } catch (err) {
-        console.error('network/order error', err);
-        document.getElementById('orderMsg').textContent = 'Network error saving order.';
-      } finally {
-        if (checkoutBtn) { checkoutBtn.disabled = false; checkoutBtn.textContent = 'Place Order'; }
+      } else {
+        // save pending and show message
+        savePendingOrder(payload);
+        document.getElementById('orderMsg') && (document.getElementById('orderMsg').textContent = 'Order received locally (server error). We will retry later.');
+        err('order fail', json);
+      }
+    } catch (e) {
+      err('network error', e);
+      savePendingOrder(payload);
+      document.getElementById('orderMsg') && (document.getElementById('orderMsg').textContent = 'Network error — order saved locally.');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Place Order'; }
+    }
+  }
+
+  // Hook up event listeners
+  function bindHandlers(){
+    const list = document.getElementById('cartList');
+    if (!list) return;
+
+    // Delegated click handling for Remove and future buttons
+    list.addEventListener('click', (e) => {
+      const rem = e.target.closest && e.target.closest('.remove-btn');
+      if (rem) {
+        const sku = rem.dataset.sku;
+        if (!sku) return;
+        if (!confirm('Remove this item from cart?')) return;
+        handleRemove(sku);
       }
     });
 
-    const checkoutWhatsBtn = document.getElementById('checkoutWhats');
-    if (checkoutWhatsBtn) {
-      checkoutWhatsBtn.disabled = true;
-      checkoutWhatsBtn.addEventListener('click', () => {
-        const cart = loadCart(); const items = Object.values(cart);
+    // Clear cart
+    const clearBtn = document.getElementById('clearBtn');
+    if (clearBtn) clearBtn.addEventListener('click', () => {
+      if (!confirm('Clear cart?')) return;
+      clearCart();
+    });
+
+    // Checkout (place order)
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    if (checkoutBtn) checkoutBtn.addEventListener('click', placeOrder);
+
+    // WhatsApp confirm (build message from current cart)
+    const waBtn = document.getElementById('checkoutWhats');
+    if (waBtn) {
+      waBtn.disabled = true; // enabled only after successful place order, or you can change policy
+      waBtn.addEventListener('click', () => {
+        const cart = loadCart(); const items = Object.values(cart || {});
         if (!items.length) { alert('Cart empty'); return; }
         let msg = 'Hello SDB Plantation, I would like to order:%0A';
-        items.forEach(it => msg += `- ${it.name}: ${it.qtyKg} kg @ ₹${it.price}/kg = ₹${(it.qtyKg*it.price).toFixed(2)}%0A`);
-        msg += `%0ATotal items: ${items.length}%0ATotal kg: ${items.reduce((s,i)=>s+Number(i.qtyKg||0),0)} kg%0AGrand total: ₹${items.reduce((s,i)=>s + (Number(i.qtyKg||0)*Number(i.price||0)),0).toFixed(2)}`;
-        window.open(`https://wa.me/918553334247?text=${msg}`, '_blank');
+        items.forEach(it => msg += `- ${it.name}: ${it.qtyKg} kg @ ₹${Number(it.price).toFixed(2)}/kg = ₹${(Number(it.qtyKg)||0 * Number(it.price)||0).toFixed(2)}%0A`);
+        msg += `%0ATotal items: ${items.length}%0ATotal kg: ${items.reduce((s,i)=> s + Number(i.qtyKg||0),0)} kg%0AGrand total: ₹${items.reduce((s,i)=> s + (Number(i.qtyKg||0)*Number(i.price||0)),0).toFixed(2)}`;
+        window.open(`https://wa.me/918553334247?text=${encodeURIComponent(msg)}`, '_blank');
       });
     }
+  }
 
-    log('cart handlers bound');
+  // Listen for storage changes (other tabs) and re-render
+  window.addEventListener('storage', (ev) => {
+    if (!ev.key || ev.key === 'cartUpdatedAt' || ev.key === CART_KEY) {
+      render();
+    }
   });
 
+  // Initialize
+  document.addEventListener('DOMContentLoaded', () => {
+    render();
+    bindHandlers();
+    log('cart.js initialized');
+  });
+
+  // Expose small debug helpers
+  window.__cartDebug = {
+    loadCart, saveCart, render, clearCart
+  };
 })();
-
-
-
