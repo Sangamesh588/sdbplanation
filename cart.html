@@ -636,7 +636,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;pa
   .qty-plus, .qty-minus, .quantity-btn, .qty-controls { display: none !important; }
 
   /* If plus/minus are simple text buttons near inputs, hide siblings that are only '+' or '-' */
-  .cart-item button:where(:not([type])):where(:not([role])) {
+ .cart-item button:where(:not([type])):where(:not([role])) {
     /* fallback: nothing — we'll remove such buttons with JS below */
   }
 
