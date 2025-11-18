@@ -90,9 +90,21 @@
     updateTotals(items);
   }
 
-  function updateTotals(items){
+ function updateTotals(items){
     items = items || Object.values(loadCart() || {});
-    const { totalKg, totalAmount } = computeTotals(items);
+    let { totalKg, totalAmount } = computeTotals(items);  // allow editing totalAmount
+
+    const discountBox = document.getElementById("discountMessage");
+
+    // ⭐ DISCOUNT LOGIC — 5% if > 60 kg
+    if (totalKg > 60) {
+        const discount = totalAmount * 0.05;
+        totalAmount = totalAmount - discount;
+        if (discountBox) discountBox.textContent = "🎉 Congratulations! You received 5% discount!";
+    } else {
+        if (discountBox) discountBox.textContent = "";
+    }
+
     const totalItemsEl = document.getElementById('totalItems');
     const totalKgEl = document.getElementById('totalKg');
     const grandEl = document.getElementById('grandTotal');
@@ -104,7 +116,7 @@
     if (grandEl) grandEl.textContent = (totalAmount || 0).toFixed(2);
     if (headerCount) headerCount.textContent = String(items.length || 0);
     if (fabCount) fabCount.textContent = String(items.length || 0);
-  }
+}
 
   // Remove item
   function handleRemove(sku){
@@ -296,3 +308,4 @@ list.addEventListener("input", e => {
   // debug helpers
   window.__cartDebug = { loadCart, saveCart, render, clearCart };
 })();
+
