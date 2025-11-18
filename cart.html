@@ -779,72 +779,142 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;pa
     height: 150px; 
   }
 }
+<style>
+
+/* ⭐ FLOATING CART BUTTON */
+#floatingCartBtn {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  background: #2f9e44;
+  color: #fff;
+  padding: 14px 20px;
+  border-radius: 50px;
+  font-size: 16px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  z-index: 9999;
+  cursor: pointer;
+}
+
+#floatingCartBtn span {
+  background: white;
+  color: #2f9e44;
+  padding: 2px 8px;
+  border-radius: 50%;
+  font-weight: 700;
+}
+
+/* ⭐ ANIMATION FOR TOTAL PRICE */
+@keyframes smoothCount {
+  from { opacity: 0.3; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.animate-total {
+  animation: smoothCount 0.25s ease-out;
+}
+
+</style>
 
 
 
 </style>
-</head>
-<body>
-    
-    <!-- Mobile / PWA friendly meta (paste into <head>) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#2f9e44">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-  <div class="wrap">
+<title>SDB Plantation — Cart</title>
+
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="wrap">
+
     <header>
-      <h2>Your Cart</h2>
-      <div><a href="/" class="small">Continue shopping</a></div>
+        <h2>Your Cart</h2>
+        <div><a href="/" class="small">Continue shopping</a></div>
     </header>
 
+    <!-- CART ITEMS WILL LOAD HERE -->
     <div id="cartList"></div>
 
+
+    <!-- CUSTOMER DETAILS -->
     <section style="margin-top:14px;border:1px solid #f0f0f0;padding:12px;border-radius:10px">
-      <h3>Customer details</h3>
-      <div>
-        <label for="custName">Name *</label>
-        <input id="custName" class="input" placeholder="Your full name">
-      </div>
-      <div style="margin-top:8px">
-        <label for="custPhone">Phone / WhatsApp *</label>
-        <input id="custPhone" class="input" placeholder="+91">
-      </div>
-      <div style="margin-top:8px">
-        <label for="custAddress">Delivery address *</label>
-        <textarea id="custAddress" class="input" rows="3" placeholder="Full delivery address"></textarea>
-      </div>
-      <div class="note">Minimum order 10 kg. For urgent orders call or WhatsApp: <a href="tel:+918553334247">+91 85533 34247</a></div>
+        <h3>Customer details</h3>
+
+        <div>
+            <label for="custName">Name *</label>
+            <input id="custName" class="input" placeholder="Your full name">
+        </div>
+
+        <div style="margin-top:8px">
+            <label for="custPhone">Phone / WhatsApp *</label>
+            <input id="custPhone" class="input" placeholder="+91">
+        </div>
+
+        <div style="margin-top:8px">
+            <label for="custAddress">Delivery address *</label>
+            <textarea id="custAddress" class="input" rows="3" placeholder="Full delivery address"></textarea>
+        </div>
+
+        <div class="note">
+            Minimum order 10 kg. For urgent orders call: 
+            <a href="tel:+918553334247">+91 85533 34247</a>
+        </div>
     </section>
 
+
+    <!-- TOTALS -->
     <div class="totals">
-      <div class="small">Total items: <span id="totalItems">0</span></div>
-      <div class="small">Total kg: <span id="totalKg">0</span> kg</div>
-      <div class="small">Grand total: ₹ <span id="grandTotal">0.00</span></div>
+        <div class="small">Total items: <span id="totalItems">0</span></div>
+        <div class="small">Total kg: <span id="totalKg">0</span> kg</div>
+        <div class="small">Grand total: ₹ <span id="grandTotal">0.00</span></div>
+
         <div id="discountMessage" style="color:green;font-size:1.4rem;font-weight:700;margin-top:10px;"></div>
 
-      <div class="actions">
-        <button id="checkoutBtn" class="btn">Place Order</button>
-        <button id="checkoutWhats" class="btn" style="background:#128C7E">Confirm via WhatsApp</button>
-        <button id="clearBtn" class="btn" style="background:transparent;color:#2f9e44;border:1px solid #2f9e44">Clear cart</button>
-      </div>
-<p id="orderMsg"
-   style="
-     margin-top:14px;
-     font-size:22px;
-     font-weight:900;
-     color:#2f9e44;
-     text-align:center;
-   ">
-</p>
+        <div class="actions">
+            <button id="checkoutBtn" class="btn">Place Order</button>
+            <button id="checkoutWhats" class="btn" style="background:#128C7E">Confirm via WhatsApp</button>
+            <button id="clearBtn" class="btn" style="background:transparent;color:#2f9e44;border:1px solid #2f9e44">
+                Clear cart
+            </button>
+        </div>
 
+        <p id="orderMsg"
+            style="margin-top:14px;font-size:22px;font-weight:900;color:#2f9e44;text-align:center;">
+        </p>
     </div>
 
+
+    <!-- FOOTER -->
     <footer style="margin-top:24px">
-      <div class="small">SDB Plantation ·  near 195 Sri navdurga temple mohan Raj layout sathnur village<br>
-            jala hobli, srinivaspur, Sathanur, Bengaluru, Karnataka<br> · <a href="https://wa.me/918553334247">WhatsApp</a> · <a href="mailto:sdbplantation@gmail.com">sdbplantation@gmail.com</a></div>
+        <div class="small">
+            SDB Plantation · near 195 Sri Navdurga Temple Mohan Raj Layout Sathnur Village,
+            Bengaluru, Karnataka<br>
+            <a href="https://wa.me/918553334247">WhatsApp</a> · 
+            <a href="mailto:sdbplantation@gmail.com">sdbplantation@gmail.com</a>
+        </div>
     </footer>
-  </div>
+    <div id="floatingCartBtn" onclick="window.location.href='/cart'">
+  🛒 Cart <span id="floatingCount">0</span>
+</div>
+
+
+</div>
+
+</body>
+</html>
+
 <script>
 /* Small mobile UX: ensure elements are scrolled into view when input focused */
 (function(){
@@ -985,6 +1055,7 @@ function updateTotals() {
 <script src="cart.js"></script>
 </body>
 </html>
+
 
 
 
