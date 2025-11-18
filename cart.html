@@ -189,7 +189,7 @@ header {
   --gap:12px;
   --max-width:1100px;
   --text-base:16px;
-  --small:15px;
+  --small:13px;
   font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
 }
 /* Cart card: stable 3-col on desktop, 2-col on mobile with controls below */
@@ -333,10 +333,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;pa
   .card img{width:100px;height:80px;object-fit:cover;border-radius:8px}
   .qty{width:90px;padding:8px;border-radius:8px;border:1px solid #e6e9ed}
   .btn{background:#2f9e44;color:#fff;padding:10px 14px;border-radius:10px;border:none;cursor:pointer}
-  .small {
-  color: #6b7280;
-  font-size: 1.rem;     /* Medium big */
-  font-weight: 500; }   
+  .small{color:#6b7280}
   .totals{margin-top:10px;padding-top:10px;border-top:1px dashed #eee}
   .actions{display:flex;gap:8px;margin-top:10px}
   .input{padding:8px;border-radius:8px;border:1px solid #e6e9ed;width:100%}
@@ -819,12 +816,10 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;pa
       <div class="note">Minimum order 10 kg. For urgent orders call or WhatsApp: <a href="tel:+918553334247">+91 85533 34247</a></div>
     </section>
 
- <div class="totals">
-  <div class="small">Total items: <span id="totalItems">0</span></div>
-  <div class="small">Total kg: <span id="totalKg">0</span> kg</div>
-  <div class="small">Grand total: ₹ <span id="grandTotal">0.00</span></div>
-</div>
-
+    <div class="totals">
+      <div class="small">Total items: <span id="totalItems">0</span></div>
+      <div class="small">Total kg: <span id="totalKg">0</span> kg</div>
+      <div class="small">Grand total: ₹ <span id="grandTotal">0.00</span></div>
       <div class="actions">
         <button id="checkoutBtn" class="btn">Place Order</button>
         <button id="checkoutWhats" class="btn" style="background:#128C7E">Confirm via WhatsApp</button>
@@ -976,12 +971,6 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;pa
   <script src="cart.js"></script>
 </body>
 </html>
-
-
-
-
-
-
 
 
 
