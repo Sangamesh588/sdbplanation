@@ -785,6 +785,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;pa
 </style>
 </head>
 <body>
+    
     <!-- Mobile / PWA friendly meta (paste into <head>) -->
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#2f9e44">
@@ -820,6 +821,8 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;pa
       <div class="small">Total items: <span id="totalItems">0</span></div>
       <div class="small">Total kg: <span id="totalKg">0</span> kg</div>
       <div class="small">Grand total: ₹ <span id="grandTotal">0.00</span></div>
+        <div id="discountMessage" style="color:green;font-size:1.4rem;font-weight:700;margin-top:10px;"></div>
+
       <div class="actions">
         <button id="checkoutBtn" class="btn">Place Order</button>
         <button id="checkoutWhats" class="btn" style="background:#128C7E">Confirm via WhatsApp</button>
@@ -854,6 +857,34 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;pa
     }
   });
 })();
+function updateTotals() {
+  let totalItems = 0;
+  let totalKg = 0;
+  let grandTotal = 0;
+
+  document.querySelectorAll(".qty-input").forEach(input => {
+    let qty = parseFloat(input.value) || 0;
+    let price = parseFloat(input.dataset.price) || 0;
+
+    totalItems += qty > 0 ? 1 : 0;
+    totalKg += qty;
+    grandTotal += qty * price;
+  });
+
+  // ⭐ DISCOUNT FUNCTION
+  let discountMessage = document.getElementById("discountMessage");
+  if (totalKg > 60) {
+    let discount = grandTotal * 0.05;
+    grandTotal -= discount;
+    discountMessage.innerHTML = "🎉 Congratulations! You received 5% discount!";
+  } else {
+    discountMessage.innerHTML = "";
+  }
+
+  document.getElementById("totalItems").textContent = totalItems;
+  document.getElementById("totalKg").textContent = totalKg;
+  document.getElementById("grandTotal").textContent = grandTotal.toFixed(2);
+}
 
 (function(){
   // --- CONFIG: change if your cart wrapper / item classes are different ---
@@ -971,6 +1002,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;pa
   <script src="cart.js"></script>
 </body>
 </html>
+
 
 
 
