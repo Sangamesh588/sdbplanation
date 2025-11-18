@@ -97,13 +97,32 @@
     const discountBox = document.getElementById("discountMessage");
 
     // ⭐ DISCOUNT LOGIC — 5% if > 60 kg
-    if (totalKg > 60) {
-        const discount = totalAmount * 0.05;
-        totalAmount = totalAmount - discount;
-        if (discountBox) discountBox.textContent = "🎉 Congratulations! You received 5% discount!";
-    } else {
-        if (discountBox) discountBox.textContent = "";
+  if (totalKg > 60) {
+    const discount = totalAmount * 0.05;
+    totalAmount -= discount;
+
+    if (discountBox) {
+        discountBox.innerHTML = `
+            <div style="
+                background:#e8fff0;
+                color:#2f9e44;
+                padding:12px;
+                border-radius:10px;
+                margin-top:10px;
+                font-size:16px;
+                font-weight:800;
+                text-align:center;
+                box-shadow:0 3px 10px rgba(0,0,0,0.08);
+            ">
+                🎉 Congratulations! <br> 
+                You unlocked a <span style="color:#0b8d2a;">5% discount</span> on your order!
+            </div>
+        `;
     }
+} else {
+    if (discountBox) discountBox.innerHTML = "";
+}
+
 
     const totalItemsEl = document.getElementById('totalItems');
     const totalKgEl = document.getElementById('totalKg');
@@ -308,4 +327,5 @@ list.addEventListener("input", e => {
   // debug helpers
   window.__cartDebug = { loadCart, saveCart, render, clearCart };
 })();
+
 
